@@ -1,0 +1,202 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - main
+      - "codex/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  publish-images:
+    name: Publish Docker Images
+    runs-on: ubuntu-latest
+    outputs:
+      backend_image_ref: ${{ steps.vars.outputs.backend_image_ref }}
+      frontend_image_ref: ${{ steps.vars.outputs.frontend_image_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Compute image names
+        id: vars
+        run: |
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          repo=$(echo "${GITHUB_REPOSITORY#*/}" | tr '[:upper:]' '[:lower:]')
+          backend_image="ghcr.io/${owner}/${repo}-backend"
+          frontend_image="ghcr.io/${owner}/${repo}-frontend"
+          echo "backend_image=${backend_image}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image=${frontend_image}" >> "$GITHUB_OUTPUT"
+          echo "backend_image_ref=${backend_image}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "frontend_image_ref=${frontend_image}:sha-${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Backend image metadata
+        id: backend_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.vars.outputs.backend_image }}
+          tags: |
+            type=raw,value=sha-${{ github.sha }}
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Frontend image metadata
+        id: frontend_meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ steps.vars.outputs.frontend_image }}
+          tags: |
+            type=raw,value=sha-${{ github.sha }}
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.backend_meta.outputs.tags }}
+          labels: ${{ steps.backend_meta.outputs.labels }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          build-args: |
+            VITE_API_BASE_URL=${{ vars.VITE_API_BASE_URL || '/api' }}
+          tags: ${{ steps.frontend_meta.outputs.tags }}
+          labels: ${{ steps.frontend_meta.outputs.labels }}
+
+  deploy-production:
+    name: Deploy To Server
+    needs: publish-images
+    if: ${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/codex/')) && secrets.DEPLOY_HOST != '' && secrets.DEPLOY_USER != '' && secrets.DEPLOY_PASSWORD != '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy deployment manifest
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          source: docker-compose.prod.yml
+          target: ${{ vars.DEPLOY_APP_DIR || '/opt/medical-translate' }}
+          overwrite: true
+
+      - name: Deploy application
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          DEPLOY_APP_DIR: ${{ vars.DEPLOY_APP_DIR || '/opt/medical-translate' }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          APP_PORT: ${{ vars.APP_PORT || '80' }}
+          BACKEND_IMAGE: ${{ needs.publish-images.outputs.backend_image_ref }}
+          FRONTEND_IMAGE: ${{ needs.publish-images.outputs.frontend_image_ref }}
+          GHCR_USERNAME: ${{ github.actor }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FRONTEND_BASE_URL: ${{ vars.FRONTEND_BASE_URL || '' }}
+          PROD_JWT_SECRET: ${{ secrets.PROD_JWT_SECRET }}
+          PROD_FEISHU_APP_ID: ${{ secrets.PROD_FEISHU_APP_ID }}
+          PROD_FEISHU_APP_SECRET: ${{ secrets.PROD_FEISHU_APP_SECRET }}
+          PROD_FEISHU_REDIRECT_URI: ${{ secrets.PROD_FEISHU_REDIRECT_URI }}
+          PROD_FEISHU_SCOPE: ${{ vars.PROD_FEISHU_SCOPE || 'contact:user.base:readonly contact:user.email:readonly' }}
+          PROD_DASHSCOPE_API_KEY: ${{ secrets.PROD_DASHSCOPE_API_KEY }}
+          PROD_DASHSCOPE_BASE_URL: ${{ vars.PROD_DASHSCOPE_BASE_URL || 'https://dashscope.aliyuncs.com/compatible-mode/v1' }}
+          PROD_DASHSCOPE_MODEL: ${{ vars.PROD_DASHSCOPE_MODEL || 'qwen-turbo-latest' }}
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          password: ${{ secrets.DEPLOY_PASSWORD }}
+          envs: DEPLOY_APP_DIR,DEPLOY_HOST,APP_PORT,BACKEND_IMAGE,FRONTEND_IMAGE,GHCR_USERNAME,GHCR_TOKEN,FRONTEND_BASE_URL,PROD_JWT_SECRET,PROD_FEISHU_APP_ID,PROD_FEISHU_APP_SECRET,PROD_FEISHU_REDIRECT_URI,PROD_FEISHU_SCOPE,PROD_DASHSCOPE_API_KEY,PROD_DASHSCOPE_BASE_URL,PROD_DASHSCOPE_MODEL
+          script_stop: true
+          script: |
+            set -eu
+
+            if ! command -v docker >/dev/null 2>&1; then
+              if command -v dnf >/dev/null 2>&1 && grep -qi 'Alibaba Cloud Linux' /etc/os-release; then
+                wget -O /etc/yum.repos.d/docker-ce.repo http://mirrors.cloud.aliyuncs.com/docker-ce/linux/centos/docker-ce.repo
+                sed -i 's|https://mirrors.aliyun.com|http://mirrors.cloud.aliyuncs.com|g' /etc/yum.repos.d/docker-ce.repo
+                dnf -y install dnf-plugin-releasever-adapter --repo alinux3-plus
+                dnf -y install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                systemctl enable --now docker
+              else
+                curl -fsSL https://get.docker.com | sh
+              fi
+            fi
+
+            if ! docker compose version >/dev/null 2>&1; then
+              echo "docker compose plugin is required on the server." >&2
+              exit 1
+            fi
+
+            DEPLOY_DIR="${DEPLOY_APP_DIR}"
+            EXTERNAL_PORT="${APP_PORT:-80}"
+            if [ "${EXTERNAL_PORT}" = "80" ]; then
+              DEFAULT_FRONTEND_URL="http://${DEPLOY_HOST}"
+            else
+              DEFAULT_FRONTEND_URL="http://${DEPLOY_HOST}:${EXTERNAL_PORT}"
+            fi
+            FRONTEND_URL="${FRONTEND_BASE_URL:-${DEFAULT_FRONTEND_URL}}"
+            JWT_SECRET_VALUE="${PROD_JWT_SECRET:-change-me}"
+            FEISHU_SCOPE_VALUE="${PROD_FEISHU_SCOPE:-contact:user.base:readonly contact:user.email:readonly}"
+            FEISHU_REDIRECT_VALUE="${PROD_FEISHU_REDIRECT_URI:-${FRONTEND_URL}/api/auth/feishu/callback}"
+            FEISHU_ENABLED="false"
+            if [ -n "${PROD_FEISHU_APP_ID:-}" ] && [ -n "${PROD_FEISHU_APP_SECRET:-}" ]; then
+              FEISHU_ENABLED="true"
+            fi
+
+            mkdir -p "${DEPLOY_DIR}/backend"
+
+            cat > "${DEPLOY_DIR}/backend/.env" <<EOF
+            ALLOWED_ORIGINS=${FRONTEND_URL}
+            FRONTEND_BASE_URL=${FRONTEND_URL}
+            JWT_SECRET_KEY=${JWT_SECRET_VALUE}
+            DATABASE_URL=sqlite+aiosqlite:///./data/medical_translate.db
+            STORAGE_ROOT=./data/storage
+            FEISHU_SSO_ENABLED=${FEISHU_ENABLED}
+            FEISHU_CLIENT_ID=${PROD_FEISHU_APP_ID}
+            FEISHU_CLIENT_SECRET=${PROD_FEISHU_APP_SECRET}
+            FEISHU_REDIRECT_URI=${FEISHU_REDIRECT_VALUE}
+            FEISHU_SCOPE=${FEISHU_SCOPE_VALUE}
+            DASHSCOPE_API_KEY=${PROD_DASHSCOPE_API_KEY}
+            DASHSCOPE_BASE_URL=${PROD_DASHSCOPE_BASE_URL}
+            DASHSCOPE_MODEL=${PROD_DASHSCOPE_MODEL}
+            EOF
+
+            cat > "${DEPLOY_DIR}/.env.deploy" <<EOF
+            APP_PORT=${EXTERNAL_PORT}
+            BACKEND_IMAGE=${BACKEND_IMAGE}
+            FRONTEND_IMAGE=${FRONTEND_IMAGE}
+            EOF
+
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USERNAME}" --password-stdin
+
+            cd "${DEPLOY_DIR}"
+            docker compose --env-file .env.deploy -f docker-compose.prod.yml pull
+            docker compose --env-file .env.deploy -f docker-compose.prod.yml up -d --remove-orphans
+            docker image prune -f

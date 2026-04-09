@@ -1,0 +1,12 @@
+.env
+.env.*
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+medical_translate.db
+storage
+*.egg-info
