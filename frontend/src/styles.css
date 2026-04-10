@@ -318,6 +318,23 @@ pre {
   min-height: calc(100vh - 24px);
 }
 
+.workspace-stage.is-welcome {
+  width: 100%;
+  justify-self: stretch;
+  justify-items: stretch;
+  align-content: start;
+}
+
+.workspace-stage.is-welcome > * {
+  width: 100%;
+}
+
+.workspace-stage.is-welcome .workspace-hero,
+.workspace-stage.is-welcome .workspace-mode-switch {
+  width: auto;
+  justify-self: center;
+}
+
 .workspace-hero {
   display: grid;
   justify-items: center;
@@ -432,6 +449,11 @@ pre {
   min-height: 0;
 }
 
+.workspace-panel-shell.is-welcome {
+  width: 100%;
+  justify-self: stretch;
+}
+
 .workspace-panel-shell.is-text {
   flex: 1;
   min-height: 0;
@@ -461,6 +483,11 @@ pre {
   padding: 14px 16px 18px;
 }
 
+.text-panel-block.is-compose,
+.mode-panel-card.is-compose {
+  padding: 20px 24px 24px;
+}
+
 .text-panel-block.is-workspace {
   height: 100%;
   min-height: 0;
@@ -470,6 +497,7 @@ pre {
 
 .mode-panel-card {
   width: 100%;
+  display: grid;
 }
 
 .mode-panel-center {
@@ -602,6 +630,13 @@ pre {
   /* border: 1px solid var(--line); */
   border-radius: 24px;
   background: rgba(248, 250, 252, 0.8);
+}
+
+.translate-pane.is-compose {
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
 }
 
 .translate-pane-full {

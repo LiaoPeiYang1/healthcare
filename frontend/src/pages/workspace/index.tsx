@@ -50,6 +50,10 @@ export default function WorkspacePage() {
 
   const hasActiveHistory = Boolean(selectedItem)
   const activeMode = selectedItem?.taskType ?? mode
+  const hasRuntimeTask =
+    activeMode === 'text' ? translateStore.status !== 'idle' : Boolean(fileStore.currentTask)
+  const isWelcomeLayout = !hasActiveHistory && !hasRuntimeTask
+  const isTextWorkspace = activeMode === 'text' && !isWelcomeLayout
 
   return (
     <div className="app-shell">
@@ -68,7 +72,9 @@ export default function WorkspacePage() {
 
       <main className="workspace-shell">
         <WorkspaceErrorBoundary>
-          <section className={`workspace-stage ${activeMode === 'text' ? 'is-text' : ''}`}>
+          <section
+            className={`workspace-stage ${isTextWorkspace ? 'is-text' : ''} ${isWelcomeLayout ? 'is-welcome' : ''}`}
+          >
             {hasActiveHistory ? (
               <div className="workspace-active-header">
                 <div className="workspace-active-title">
@@ -86,7 +92,7 @@ export default function WorkspacePage() {
                   {selectedItem?.taskType === 'text' ? 'Text' : 'File'}
                 </div>
               </div>
-            ) : (
+            ) : isWelcomeLayout ? (
               <>
                 <div className="workspace-hero">
                   <div className="workspace-hero-icon">
@@ -115,9 +121,9 @@ export default function WorkspacePage() {
                   </button>
                 </div>
               </>
-            )}
+            ) : null}
 
-            <div className={`workspace-panel-shell ${activeMode === 'text' ? 'is-text' : ''}`}>
+            <div className={`workspace-panel-shell ${isTextWorkspace ? 'is-text' : ''} ${isWelcomeLayout ? 'is-welcome' : ''}`}>
               {activeMode === 'text' ? <TextPanel /> : <FilePanel />}
             </div>
           </section>

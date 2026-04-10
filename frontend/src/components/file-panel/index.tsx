@@ -28,6 +28,7 @@ export default function FilePanel() {
   const isBusy = isActiveFileStatus(activeTask?.status)
   const isPreviewReady = activeTask?.status === 'done'
   const showPreviewOnly = activeTask?.status === 'done'
+  const showComposeLayout = !activeTask
   const previewTaskKey = activeTask?.taskId ?? activeTask?.historyId
   const nextHistoryId = useMemo(() => {
     if (!activeTask?.historyId) return undefined
@@ -79,7 +80,7 @@ export default function FilePanel() {
   }
 
   return (
-    <div className="panel-block mode-panel-card">
+    <div className={`panel-block mode-panel-card ${showComposeLayout ? 'is-compose' : ''}`}>
       {showPreviewOnly ? (
         <section >
           {/* <div className="preview-heading">
@@ -119,7 +120,7 @@ export default function FilePanel() {
           </Suspense>
         </section>
       ) : (
-        <section className="translate-pane translate-pane-full mode-panel-center">
+        <section className={`translate-pane translate-pane-full mode-panel-center ${showComposeLayout ? 'is-compose' : ''}`}>
           <LangSelector
             sourceLang={sourceLang}
             targetLang={targetLang}
