@@ -30,7 +30,6 @@ export default function TextResult({ translatedText, status }: TextResultProps) 
           <Typography.Text strong>翻译结果</Typography.Text>
         </div>
         <div className="text-result-actions">
-          {status === 'success' ? <span className="result-badge">已对齐</span> : null}
           {status === 'success' ? (
             <Button type="text" icon={<Copy size={16} />} onClick={handleCopy}>
               复制

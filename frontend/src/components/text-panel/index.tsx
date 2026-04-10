@@ -1,4 +1,4 @@
-import { Alert, Button, Card, Select, Typography } from 'antd'
+import { Alert, Button, Select, Typography } from 'antd'
 import { ArrowRight, SendHorizonal } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -6,25 +6,21 @@ import TextInput from '@/components/text-panel/text-input'
 import TextResult from '@/components/text-panel/text-result'
 import { useTextTranslation } from '@/hooks/use-text-translation'
 import { supportedLanguages } from '@/utils/format'
-import MenuDivider from 'antd/es/menu/MenuDivider'
 
 export default function TextPanel() {
   const {
     sourceText,
     translatedText,
-    sourceLang,
     targetLang,
-    detectedLang,
     status,
     error,
     canSubmit,
     setSourceText,
-    setLanguages,
+    setTargetLanguage,
     submit,
     retry,
   } = useTextTranslation()
 
-  const sameLanguage = (sourceLang === targetLang || detectedLang === targetLang) && sourceText.trim()
   const showWorkspaceLayout = status !== 'idle'
 
   const handleSubmit = async () => {
@@ -36,18 +32,11 @@ export default function TextPanel() {
   }
 
   return (
-    <div className="panel-block">
+    <div className={`panel-block text-panel-block ${showWorkspaceLayout ? 'is-workspace' : 'is-compose'}`}>
       <div className={`text-toolbar ${showWorkspaceLayout ? 'is-workspace' : 'is-compose'}`}>
-        <Select
-          size="large"
-          value={sourceLang}
-          className="text-toolbar-select"
-          onChange={(value) => setLanguages(value, targetLang)}
-          options={[
-            { label: '自动检测', value: 'auto' },
-            ...supportedLanguages.map((item) => ({ label: item.label, value: item.code })),
-          ]}
-        />
+        <div className="text-toolbar-fixed" aria-label="源语言固定为自动检测">
+          <Typography.Text>自动检测</Typography.Text>
+        </div>
         <div className="text-toolbar-arrow">
           <ArrowRight size={18} />
         </div>
@@ -55,7 +44,7 @@ export default function TextPanel() {
           size="large"
           value={targetLang}
           className="text-toolbar-select"
-          onChange={(value) => setLanguages(sourceLang, value)}
+          onChange={setTargetLanguage}
           options={supportedLanguages.map((item) => ({ label: item.label, value: item.code }))}
         />
       </div>
@@ -68,7 +57,7 @@ export default function TextPanel() {
 
       {showWorkspaceLayout ? (
         <div className="text-workspace-grid">
-          <section className="text-workspace-pane">
+          <section className="text-workspace-pane text-workspace-pane-source">
             <div className="text-pane-header">
               <div className="text-pane-label">
                 <span className="pane-dot" />
@@ -81,9 +70,8 @@ export default function TextPanel() {
               <TextInput value={sourceText} onChange={setSourceText} disabled={status === 'loading'} />
             </div>
 
-            {sameLanguage || error ? (
+            {error ? (
               <div className="surface-alert-stack">
-                {sameLanguage ? <Alert type="warning" message="源语言与目标语言不能相同" showIcon /> : null}
                 {error ? <Alert type="error" message={error} showIcon /> : null}
               </div>
             ) : null}
@@ -119,9 +107,8 @@ export default function TextPanel() {
               <TextInput value={sourceText} onChange={setSourceText} />
             </div>
 
-            {sameLanguage || error ? (
+            {error ? (
               <div className="surface-alert-stack">
-                {sameLanguage ? <Alert type="warning" message="源语言与目标语言不能相同" showIcon /> : null}
                 {error ? <Alert type="error" message={error} showIcon /> : null}
               </div>
             ) : null}

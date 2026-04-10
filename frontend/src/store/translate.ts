@@ -43,7 +43,7 @@ export const useTranslateStore = create<TranslateState>((set) => ({
   status: 'idle',
   error: null,
   setLanguages(sourceLang, targetLang) {
-    set({ sourceLang, targetLang })
+    set({ sourceLang: 'auto', targetLang })
   },
   setSourceText(sourceText) {
     set({ sourceText })
@@ -59,7 +59,7 @@ export const useTranslateStore = create<TranslateState>((set) => ({
       currentHistoryId: payload.historyId,
       sourceText: payload.sourceText,
       translatedText: payload.translatedText,
-      sourceLang: payload.sourceLang,
+      sourceLang: 'auto',
       targetLang: payload.targetLang,
       detectedLang: payload.sourceLang,
       status: 'success',
@@ -70,8 +70,9 @@ export const useTranslateStore = create<TranslateState>((set) => ({
     set({
       currentHistoryId: payload.historyId ?? null,
       sourceText: payload.sourceText,
-      sourceLang: payload.sourceLang,
+      sourceLang: 'auto',
       targetLang: payload.targetLang,
+      detectedLang: payload.sourceLang === 'auto' ? null : payload.sourceLang,
       translatedText: payload.error,
       status: 'failed',
       error: payload.error,
@@ -82,7 +83,7 @@ export const useTranslateStore = create<TranslateState>((set) => ({
       currentHistoryId: item.id,
       sourceText: item.sourceText ?? '',
       translatedText: item.translatedText ?? item.resultPreview ?? '',
-      sourceLang: item.sourceLang as LanguageCode,
+      sourceLang: 'auto',
       targetLang: item.targetLang as SupportedLanguageCode,
       detectedLang: item.sourceLang as SupportedLanguageCode,
       status: item.status === 'failed' ? 'failed' : 'success',

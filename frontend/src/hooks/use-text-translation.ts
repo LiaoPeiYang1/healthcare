@@ -162,9 +162,9 @@ export function useTextTranslation() {
 
   const setTargetLanguage = useCallback(
     (nextTarget: SupportedLanguageCode) => {
-      setLanguages(sourceLang, nextTarget)
+      setLanguages('auto', nextTarget)
     },
-    [setLanguages, sourceLang],
+    [setLanguages],
   )
 
   return {

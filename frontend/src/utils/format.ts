@@ -17,6 +17,22 @@ export function formatLanguage(codeOrLabel: string) {
   return languageMap.get(codeOrLabel as SupportedLanguageCode) ?? codeOrLabel
 }
 
+export function detectLanguageLocally(text: string): SupportedLanguageCode | null {
+  const normalized = text.trim()
+  if (!normalized) return null
+
+  if (/[\u4e00-\u9fff]/.test(normalized)) return 'zh'
+  if (/[\u3040-\u30ff]/.test(normalized)) return 'ja'
+  if (/[\uac00-\ud7af]/.test(normalized)) return 'ko'
+
+  const lowered = ` ${normalized.toLowerCase()} `
+  if ([' der ', ' die ', ' das ', ' und '].some((token) => lowered.includes(token))) return 'de'
+  if ([' le ', ' la ', ' les ', ' des '].some((token) => lowered.includes(token))) return 'fr'
+  if (/[a-z]/i.test(normalized)) return 'en'
+
+  return null
+}
+
 export function formatFileSize(bytes: number) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KB`

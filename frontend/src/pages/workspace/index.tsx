@@ -49,6 +49,7 @@ export default function WorkspacePage() {
   }
 
   const hasActiveHistory = Boolean(selectedItem)
+  const activeMode = selectedItem?.taskType ?? mode
 
   return (
     <div className="app-shell">
@@ -67,7 +68,7 @@ export default function WorkspacePage() {
 
       <main className="workspace-shell">
         <WorkspaceErrorBoundary>
-          <section className="workspace-stage">
+          <section className={`workspace-stage ${activeMode === 'text' ? 'is-text' : ''}`}>
             {hasActiveHistory ? (
               <div className="workspace-active-header">
                 <div className="workspace-active-title">
@@ -116,8 +117,8 @@ export default function WorkspacePage() {
               </>
             )}
 
-            <div className="workspace-panel-shell">
-              {(selectedItem?.taskType ?? mode) === 'text' ? <TextPanel /> : <FilePanel />}
+            <div className={`workspace-panel-shell ${activeMode === 'text' ? 'is-text' : ''}`}>
+              {activeMode === 'text' ? <TextPanel /> : <FilePanel />}
             </div>
           </section>
         </WorkspaceErrorBoundary>
