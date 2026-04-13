@@ -82,7 +82,7 @@ export default function FilePanel() {
   return (
     <div className={`panel-block mode-panel-card ${showComposeLayout ? 'is-compose' : ''}`}>
       {showPreviewOnly ? (
-        <section >
+        <section className="file-preview-workspace">
           {/* <div className="preview-heading">
             <div>
               <Typography.Title level={5}>双语对照预览</Typography.Title>
@@ -102,7 +102,7 @@ export default function FilePanel() {
               targetLang={formatLanguage(activeTask.targetLang)}
             />
 
-          <Suspense fallback={<div className="viewer-loading">预览加载中...</div>}>
+          <Suspense fallback={<div className="viewer-loading file-preview-loading">预览加载中...</div>}>
             <div className="pdf-compare-grid">
               <PdfViewer
                 title="翻译前 PDF"

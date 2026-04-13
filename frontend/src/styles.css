@@ -318,11 +318,23 @@ pre {
   min-height: calc(100vh - 24px);
 }
 
+.workspace-stage.is-file {
+  min-height: calc(100vh - 24px);
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
 .workspace-stage.is-welcome {
   width: 100%;
   justify-self: stretch;
   justify-items: stretch;
   align-content: start;
+}
+
+.workspace-stage.is-file-compose {
+  min-height: calc(100vh - 24px);
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
 }
 
 .workspace-stage.is-welcome > * {
@@ -454,6 +466,14 @@ pre {
   justify-self: stretch;
 }
 
+.workspace-panel-shell.is-file {
+  min-height: 0;
+}
+
+.workspace-panel-shell.is-file-compose {
+  min-height: 0;
+}
+
 .workspace-panel-shell.is-text {
   flex: 1;
   min-height: 0;
@@ -498,6 +518,38 @@ pre {
 .mode-panel-card {
   width: 100%;
   display: grid;
+}
+
+.workspace-panel-shell.is-file-compose .mode-panel-card,
+.workspace-panel-shell.is-file-compose .translate-pane,
+.workspace-panel-shell.is-file-compose .mode-compose-shell {
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-panel-shell.is-file .mode-panel-card {
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-panel-shell.is-file .mode-panel-card > section,
+.workspace-panel-shell.is-file .translate-pane {
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-panel-shell.is-file .file-preview-workspace {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0;
+}
+
+.workspace-panel-shell.is-file-compose .translate-pane {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.workspace-panel-shell.is-file-compose .mode-compose-shell {
+  grid-template-rows: minmax(0, 1fr) auto;
 }
 
 .mode-panel-center {
@@ -857,8 +909,10 @@ pre {
 .upload-dropzone {
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 14px;
   padding: 72px 20px;
+  min-height: 0;
   text-align: center;
   border: 1px dashed rgba(148, 163, 184, 0.28);
   border-radius: 28px;
@@ -915,17 +969,45 @@ pre {
   min-height: 320px;
 }
 
+.file-preview-loading {
+  min-height: 0;
+  height: 100%;
+}
+
 .pdf-compare-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+  min-height: 0;
+  height: 100%;
 }
 
 .pdf-preview-card {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   min-height: 360px;
   border: 1px solid var(--line) !important;
   border-radius: 22px !important;
   background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.pdf-preview-card .ant-card-body {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 14px;
+}
+
+.pdf-preview-card .ant-typography {
+  margin-bottom: 0 !important;
+}
+
+.pdf-preview-card .ant-empty {
+  min-height: 0;
+  height: 100%;
+  display: grid;
+  place-content: center;
 }
 
 .file-preview-placeholder {
@@ -946,7 +1028,8 @@ pre {
 
 .pdf-frame {
   width: 100%;
-  min-height: 540px;
+  min-height: 0;
+  height: 100%;
   border: 0;
   border-radius: 18px;
   background: white;
