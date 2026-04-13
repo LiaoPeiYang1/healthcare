@@ -29,18 +29,18 @@ except Exception:
 
 
 class DocumentService:
-    def build_sections_pdf(self, title: str, subtitle: str, sections: list[str]) -> bytes:
+    def build_sections_pdf(
+        self,
+        title: str,
+        subtitle: str,
+        sections: list[str],
+    ) -> bytes:
         buffer = BytesIO()
         pdf = canvas.Canvas(buffer, pagesize=A4)
         pdf.setTitle(title)
 
         y = self._draw_title(pdf, f'{title} - {subtitle}')
-        for index, section in enumerate(sections, start=1):
-            header = f'第 {index} 段'
-            y = self._ensure_space(pdf, y, 48)
-            pdf.setFont(BODY_FONT, HEADER_FONT_SIZE)
-            pdf.drawString(MARGIN_X, y, header)
-            y -= 20
+        for section in sections:
             y = self._draw_wrapped_text(
                 pdf,
                 section or '（该段未提取到可翻译文本）',

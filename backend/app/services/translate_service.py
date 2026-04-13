@@ -455,7 +455,14 @@ class TranslateService:
 
             translated_chunks: list[str] = []
             for chunk in document_service.split_for_translation(protected_text):
-                translated_chunks.append(await provider_service.translate(chunk, source_lang, target_lang))
+                translated_chunks.append(
+                    await provider_service.translate(
+                        chunk,
+                        source_lang,
+                        target_lang,
+                        preserve_format=True,
+                    )
+                )
 
             translated_text = '\n'.join(part.strip() for part in translated_chunks if part.strip())
             for item in term_matches:

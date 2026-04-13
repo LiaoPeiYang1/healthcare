@@ -30,30 +30,56 @@ class ProviderService:
             return 'fr', 0.85
         return 'en', 0.8
 
-    async def translate(self, text: str, source_lang: str, target_lang: str) -> str:
+    async def translate(
+        self,
+        text: str,
+        source_lang: str,
+        target_lang: str,
+        *,
+        preserve_format: bool = False,
+    ) -> str:
         if settings.dashscope_api_key:
             try:
-                return await self._translate_with_dashscope(text, source_lang, target_lang)
+                return await self._translate_with_dashscope(text, source_lang, target_lang, preserve_format=preserve_format)
             except Exception:
                 pass
-        return self._fallback_translation(text, source_lang, target_lang)
+        return self._fallback_translation(text, source_lang, target_lang, preserve_format=preserve_format)
 
-    async def _translate_with_dashscope(self, text: str, source_lang: str, target_lang: str) -> str:
+    async def _translate_with_dashscope(
+        self,
+        text: str,
+        source_lang: str,
+        target_lang: str,
+        *,
+        preserve_format: bool = False,
+    ) -> str:
         url = f"{settings.dashscope_base_url.rstrip('/')}/chat/completions"
         headers = {
             'Authorization': f'Bearer {settings.dashscope_api_key}',
             'Content-Type': 'application/json',
         }
+        if preserve_format:
+            system_prompt = (
+                '你是专业医药文档翻译引擎。请仅返回译文，严格保留原文的段落顺序、换行、'
+                '编号、列表项目和表述结构；不要添加标题、解释、总结、注释或“第 X 段”等段落标签。'
+            )
+            user_prompt = (
+                f'请将以下{SUPPORTED_LANGUAGES[source_lang]}文档内容翻译为'
+                f'{SUPPORTED_LANGUAGES[target_lang]}。只输出翻译后的正文，保持原始格式：\n\n{text}'
+            )
+        else:
+            system_prompt = '你是专业医药翻译引擎，请仅返回译文。'
+            user_prompt = f'请将以下{SUPPORTED_LANGUAGES[source_lang]}文本翻译为{SUPPORTED_LANGUAGES[target_lang]}：\n\n{text}'
         payload = {
             'model': settings.dashscope_model,
             'messages': [
                 {
                     'role': 'system',
-                    'content': '你是专业医药翻译引擎，请仅返回译文。',
+                    'content': system_prompt,
                 },
                 {
                     'role': 'user',
-                    'content': f'请将以下{SUPPORTED_LANGUAGES[source_lang]}文本翻译为{SUPPORTED_LANGUAGES[target_lang]}：\n\n{text}',
+                    'content': user_prompt,
                 },
             ],
             'temperature': 0.1,
@@ -64,7 +90,16 @@ class ProviderService:
             data = response.json()
         return data['choices'][0]['message']['content'].strip()
 
-    def _fallback_translation(self, text: str, source_lang: str, target_lang: str) -> str:
+    def _fallback_translation(
+        self,
+        text: str,
+        source_lang: str,
+        target_lang: str,
+        *,
+        preserve_format: bool = False,
+    ) -> str:
+        if preserve_format:
+            return text
         return (
             f"【{SUPPORTED_LANGUAGES[source_lang]} -> {SUPPORTED_LANGUAGES[target_lang]}】\n"
             f"{text}\n\n"
