@@ -15,6 +15,10 @@ SUPPORTED_LANGUAGES = {
 }
 
 
+class TranslationProviderError(RuntimeError):
+    pass
+
+
 class ProviderService:
     async def detect_language(self, text: str) -> tuple[str, float]:
         if re.search(r'[\u4e00-\u9fff]', text):
@@ -41,8 +45,12 @@ class ProviderService:
         if settings.dashscope_api_key:
             try:
                 return await self._translate_with_dashscope(text, source_lang, target_lang, preserve_format=preserve_format)
-            except Exception:
+            except Exception as exc:
+                if preserve_format:
+                    raise TranslationProviderError('翻译模型调用失败，请检查模型配置或稍后重试') from exc
                 pass
+        elif preserve_format:
+            raise TranslationProviderError('未配置翻译模型，无法进行文档翻译')
         return self._fallback_translation(text, source_lang, target_lang, preserve_format=preserve_format)
 
     async def _translate_with_dashscope(
@@ -98,8 +106,6 @@ class ProviderService:
         *,
         preserve_format: bool = False,
     ) -> str:
-        if preserve_format:
-            return text
         return (
             f"【{SUPPORTED_LANGUAGES[source_lang]} -> {SUPPORTED_LANGUAGES[target_lang]}】\n"
             f"{text}\n\n"

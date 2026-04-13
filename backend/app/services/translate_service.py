@@ -20,7 +20,7 @@ from app.schemas.translate import (
     TextTranslateResponse,
 )
 from app.services.document_service import document_service
-from app.services.provider_service import SUPPORTED_LANGUAGES, provider_service
+from app.services.provider_service import SUPPORTED_LANGUAGES, TranslationProviderError, provider_service
 from app.services.terminology_service import terminology_service
 
 
@@ -236,6 +236,9 @@ class TranslateService:
             except HTTPException as exc:
                 task.status = 'failed'
                 task.error_msg = exc.detail
+            except TranslationProviderError as exc:
+                task.status = 'failed'
+                task.error_msg = str(exc)
             except Exception:
                 task.status = 'failed'
                 task.error_msg = '文件翻译失败，请稍后重试'
