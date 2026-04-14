@@ -326,9 +326,11 @@ pre {
 
 .workspace-stage.is-welcome {
   width: 100%;
+  min-height: calc(100vh - 24px);
   justify-self: stretch;
   justify-items: stretch;
-  align-content: start;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
 }
 
 .workspace-stage.is-file-compose {
@@ -464,6 +466,8 @@ pre {
 .workspace-panel-shell.is-welcome {
   width: 100%;
   justify-self: stretch;
+  min-height: 0;
+  height: 100%;
 }
 
 .workspace-panel-shell.is-file {
@@ -477,6 +481,13 @@ pre {
 .workspace-panel-shell.is-text {
   flex: 1;
   min-height: 0;
+}
+
+.workspace-panel-shell.is-welcome .text-panel-block.is-compose {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  height: 100%;
 }
 
 .panel-stack {
@@ -558,6 +569,11 @@ pre {
   width: 100%;
 }
 
+.workspace-panel-shell.is-welcome .mode-panel-center {
+  min-height: 0;
+  height: 100%;
+}
+
 .mode-compose-shell {
   width: 100%;
   margin: 0;
@@ -567,6 +583,12 @@ pre {
 
 .text-compose-shell {
   gap: 18px;
+}
+
+.workspace-panel-shell.is-welcome .text-compose-shell {
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-height: 0;
+  height: 100%;
 }
 
 .text-toolbar {
@@ -728,6 +750,24 @@ pre {
 
 .text-input-shell.is-compose .ant-input {
   min-height: min(60vh, 560px) !important;
+}
+
+.workspace-panel-shell.is-welcome .text-input-shell.is-compose {
+  display: grid;
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-panel-shell.is-welcome .text-input-shell.is-compose .ant-input-textarea,
+.workspace-panel-shell.is-welcome .text-input-shell.is-compose .ant-input-textarea-show-count {
+  display: flex;
+  min-height: 0;
+  height: 100%;
+}
+
+.workspace-panel-shell.is-welcome .text-input-shell.is-compose .ant-input {
+  min-height: calc(100% - 30px) !important;
+  height: calc(100% - 30px) !important;
 }
 
 .text-input-shell .ant-input-textarea-show-count {
